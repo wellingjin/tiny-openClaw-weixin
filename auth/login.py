@@ -6,6 +6,7 @@ import os
 from typing import Optional, Dict, Any, Tuple
 from PIL import Image
 from io import BytesIO
+from qrcode_terminal import draw
 
 from api.client import WeixinApiClient
 
@@ -39,6 +40,9 @@ class WeixinLogin:
             print(f"获取二维码异常: {e}")
             return None
     
+    def display_qrcode_terminal(self, qrcode_img_content: str) -> None:
+        draw(qrcode_img_content)
+
     def display_qrcode(self, qrcode_img_content: str, save_path: str = "./login-qrcode.png") -> str:
         """
         显示并保存二维码
@@ -63,7 +67,6 @@ class WeixinLogin:
             
             # 2. 生成二维码图片
             img = qr.make_image(fill_color="black", back_color="white")
-            
             
             # 确保目录存在
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -150,7 +153,7 @@ class WeixinLogin:
             return False
         
         # 2. 显示二维码
-        qr_path = self.display_qrcode(qrcode_img)
+        self.display_qrcode_terminal(qrcode_img)
         
         # 3. 轮询扫码状态
         success, account_data = self.poll_qr_status(qrcode)
