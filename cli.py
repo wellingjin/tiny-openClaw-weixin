@@ -92,11 +92,15 @@ class WeixinBot:
         
         if content_type == "text" and content:
             print(f"\n📨 收到消息来自 {from_user_id}:")
-            print(f"{content}")
+            # print(f"{content}")
             
             # 发送自动回复
             if self.sender and self.account:
-                question = self.agent.ask(content)
+                try:
+                    question = self.agent.ask(content)
+                except Exception as e:
+                    print(f"   ❌ 处理消息失败: {e}")
+                    question = "抱歉，处理您的消息时发生了错误。"
                 message_id = self.sender.send_text(
                             from_user_id, question if question else "无法处理该问题", context_token, self.account.bot_token
                         )
