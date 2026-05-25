@@ -14,7 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from typing import Callable, Dict, List, Optional
-from ollama import chat
+from ollama import chat, Client
 
 
 class ToolAgent:
@@ -22,7 +22,7 @@ class ToolAgent:
 
     def __init__(self, model: str = "qwen3:0.6b"):
         """
-        参数 model 可选，默认使用 qwen2.5:0.5b（你已下载的模型）。
+        参数 model 可选，默认使用 qwen3:0.6b（你已下载的模型）。
         如果你希望完全无参，可以忽略这个参数，类内部固定模型名。
         """
         self.model = model
@@ -110,6 +110,7 @@ class ToolAgent:
         self.messages.append({"role": "user", "content": question})
                     
         for _ in range(max_turns):
+            print(f'正在与模型交互...')
             response = chat(
                 model=self.model,
                 messages=self.messages,
@@ -117,7 +118,9 @@ class ToolAgent:
             )
             print(f"Response: {response.message}")
             if not response.message.tool_calls:
-                return response.message.content if response.message.content else "这个问题难住我了"
+                question = response.message.content if response.message.content else "这个问题难住我了"
+                self.messages.append({"role": "assistant", "content": question})
+                return question
             # 处理工具调用（只处理第一个，简化）
             tool_result = self._execute_tool(response.message.tool_calls[0])
             
