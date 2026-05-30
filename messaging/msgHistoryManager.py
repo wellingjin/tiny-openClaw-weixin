@@ -11,8 +11,9 @@ class MsgHistoryManager:
     用于存储和管理会话历史
     消息按收到/发送的时间 分别存到./history/目录下对应日期的json文件中
     """
-    def __init__(self):
+    def __init__(self, type='wx'):
         # 每个历史文件对应一个Lock，防止多线程写入冲突（进程内安全）
+        self.type = type
         self._locks = {}
         self._locks_lock = threading.Lock()
     
@@ -24,6 +25,43 @@ class MsgHistoryManager:
                 lock = threading.Lock()
                 self._locks[filepath] = lock
             return lock
+        
+    def _dir_path(self) -> str:
+        """返回历史记录目录路径"""
+        path = os.path.join('.', f'history/{self.type}')
+        return path
+    
+
+    def save_model_messages(self, messages: list, session: str):
+        """保存模型对话消息到历史记录（线程安全，原子写入）"""
+        history_dir = self._dir_path()
+        os.makedirs(history_dir, exist_ok=True)
+        history_file = os.path.join(history_dir, f"{session}.json")
+
+        lock = self._get_lock_for(history_file)
+        with lock:
+            # 直接覆盖
+            with open(history_file, 'w', encoding='utf-8') as f:
+                json.dump(messages, f, ensure_ascii=False, indent=2)
+            print(f"模型消息已保存到 {history_file}")
+    
+    def load_model_messages(self, session: str) -> list:
+        """加载模型对话消息历史（线程安全）"""
+        history_dir = self._dir_path()
+        history_file = os.path.join(history_dir, f"{session}.json")
+
+        lock = self._get_lock_for(history_file)
+        with lock:
+            try:
+                with open(history_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except FileNotFoundError:
+                print(f"未找到历史记录文件 {history_file}")
+                return []
+            except json.JSONDecodeError:
+                print(f"历史记录文件 {history_file} 格式错误")
+                return []
+
     
     def save_message(self, msg_info: dict):
         """保存消息到历史记录（线程安全，原子写入）"""
@@ -38,7 +76,7 @@ class MsgHistoryManager:
         # 根据update_time_ms获取对应的历史记录json文件，如果文件不存在则新建
         update_time_sec = update_time_ms // 1000
         date_str = time.strftime("%Y-%m-%d", time.localtime(update_time_sec))
-        history_dir = os.path.join('.', 'history')
+        history_dir = self._dir_path()
         history_file = os.path.join(history_dir, f"{date_str}.json")
 
         # 确保目录存在
@@ -83,3 +121,5 @@ class MsgHistoryManager:
 
 
 msgHistoryManager = MsgHistoryManager()
+
+modelHistoryManager = MsgHistoryManager(type="model")

@@ -121,6 +121,7 @@ class ToolAgent:
                 question = response.message.content if response.message.content else "这个问题难住我了"
                 self.messages.append({"role": "assistant", "content": question})
                 return question
+                
             # 处理工具调用（只处理第一个，简化）
             tool_result = self._execute_tool(response.message.tool_calls[0])
             

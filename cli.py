@@ -3,6 +3,7 @@ import json
 import sys
 import time
 from typing import Optional
+from agent.ModelAPI import ModelAPI
 from agent.ToolAgent import ToolAgent
 from api.client import WeixinApiClient
 from api.types import AccountData
@@ -25,7 +26,7 @@ class WeixinBot:
         self.receiver: Optional[MessageReceiver] = None
         self.cndManager = CDNManager()
         self.msgHistoryManager = msgHistoryManager
-        self.agent = ToolAgent()     
+        self.agent = ModelAPI(scene="chat")     
         
         # 上下文Token缓存
         self.context_token_cache: dict = {}
@@ -98,9 +99,10 @@ class WeixinBot:
             if self.sender and self.account:
                 try:
                     question = self.agent.ask(content)
+                    # question = "盘前分析结论：\n五粮液：深套超40%，不建议割肉也不建议加仓，持有等待企稳信号。\n中芯国际：昨日大涨后今日剧烈震荡，建议减持500-800股锁定部分利润，保留底仓。\n如需更详细的分析，可以继续提问。"
                 except Exception as e:
                     print(f"   ❌ 处理消息失败: {e}")
-                    question = "抱歉，处理您的消息时发生了错误。"
+                    question = f"抱歉，处理您的消息时发生了错误。错误信息：\n{str(e)}"
                 message_id = self.sender.send_text(
                             from_user_id, question if question else "无法处理该问题", context_token, self.account.bot_token
                         )
